@@ -1,66 +1,72 @@
 use core::panic;
 
+#[derive(Debug, Clone)]
 pub struct PBCGrid<T> {
     x: usize,
     y: usize,
-    data: Vec<T>,
+    pub data: Vec<T>,
 }
 
 impl<T: Default> PBCGrid<T> {
+    /// 1-indexed
     pub fn new_default(x: usize, y: usize) -> Self {
         if x == 0 || y == 0 {
             panic!()
         }
 
         Self {
-            x,
-            y,
+            x: x - 1,
+            y: y - 1,
             data: (0..(x * y)).into_iter().map(|_| T::default()).collect(),
         }
     }
 }
 
 impl<T: Clone> PBCGrid<T> {
+    /// 1-indexed
     pub fn new_clone(x: usize, y: usize, d: T) -> Self {
         if x == 0 || y == 0 {
             panic!()
         }
 
         Self {
-            x,
-            y,
+            x: x - 1,
+            y: y - 1,
             data: (0..(x * y)).into_iter().map(|_| d.clone()).collect(),
         }
     }
 }
 
 impl<T: Copy> PBCGrid<T> {
+    /// 1-indexed
     pub fn new_copy(x: usize, y: usize, d: T) -> Self {
         if x == 0 || y == 0 {
             panic!()
         }
 
         Self {
-            x,
-            y,
+            x: x - 1,
+            y: y - 1,
             data: (0..(x * y)).into_iter().map(|_| d).collect(),
         }
     }
 }
 
 impl<T> PBCGrid<T> {
-    pub fn new_empty(x: usize, y: usize) -> Self {
-        if x == 0 || y == 0 {
-            panic!()
-        }
+    // /// 1-indexed
+    // pub fn new_empty(x: usize, y: usize) -> Self {
+    //     if x == 0 || y == 0 {
+    //         panic!()
+    //     }
 
-        Self {
-            x,
-            y,
-            data: Vec::with_capacity(x * y),
-        }
-    }
+    //     Self {
+    //         x: x - 1,
+    //         y: y - 1,
+    //         data: Vec::with_capacity(x * y),
+    //     }
+    // }
 
+    /// 1-indexed
     pub fn new_from_vec(x: usize, y: usize, v: Vec<T>) -> Self {
         // TODO fix panic
         if x == 0 || y == 0 {
@@ -71,7 +77,15 @@ impl<T> PBCGrid<T> {
             panic!()
         }
 
-        Self { x, y, data: v }
+        Self {
+            x: x,
+            y: y,
+            data: v,
+        }
+    }
+
+    pub fn to_xy(&self, idx: usize) -> (usize, usize) {
+        (idx % self.x, idx / self.x)
     }
 
     pub fn get_xy(&self, x: usize, y: usize) -> &T {
@@ -101,6 +115,30 @@ impl<T> PBCGrid<T> {
             self.get_xy_left(x, y),
             self.get_xy_right(x, y),
         ]
+    }
+
+    pub fn get_all(&self) -> &Vec<T> {
+        &self.data
+    }
+
+    pub fn get_all_adjacent(&self) -> Vec<(&T, Vec<&T>)> {
+        return self
+            .data
+            .iter()
+            .enumerate()
+            .map(|(e, i)| {
+                let (x, y) = self.to_xy(e);
+                (i, self.get_xy_adjacent(x, y))
+            })
+            .collect();
+    }
+
+    pub fn x(&self) -> usize {
+        self.x
+    }
+
+    pub fn y(&self) -> usize {
+        self.y
     }
 }
 
