@@ -64,6 +64,6 @@ impl From<Spin> for f64 {
         if value.s == SpinState::P {
             return 1.0;
         };
-        0.1
+        -1.0
     }
 }

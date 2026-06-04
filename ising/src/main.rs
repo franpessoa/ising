@@ -35,15 +35,28 @@ fn hamiltoniana_ising(s: &Ising) -> f64 {
     -sum_j - sum_h
 }
 
-fn p_ising(s: &Ising) -> f64 {
-    return f64::exp(-s.config.beta * hamiltoniana_ising(s));
-}
-
 impl Metropolis for Ising {
-    fn p(&self) -> f64 {
-        p_ising(self)
-    }
+    fn delta_e(&self, o: &Self) -> f64 {
+        // Find the flipped spin
+        let idx = self
+            .lambda
+            .data
+            .iter()
+            .zip(o.lambda.data.iter())
+            .position(|(a, b)| a != b)
+            .unwrap();
 
+        let (x, y) = self.lambda.to_xy(idx);
+        let spin_0 = f64::from(self.lambda.data[idx]);
+        let viz: f64 = self
+            .lambda
+            .get_xy_adjacent(x, y)
+            .iter()
+            .map(|&&n| f64::from(n))
+            .sum();
+
+        2.0 * spin_0 * (self.config.j * viz + self.config.h) * self.config.beta
+    }
     fn prop(&self) -> Self {
         let mut rng = rand::rng();
         let mut prop = self.clone();
@@ -68,15 +81,15 @@ fn main() {
                 .collect::<Vec<Spin>>(),
         ),
         config: Config {
-            h: 1.0,
+            h: 0.0,
             j: 1.0,
-            beta: 100.0,
+            beta: 0.5,
         },
     };
 
     let mut res = vec![sys.clone()];
 
-    for _ in 0..300000 {
+    for _ in 0..500000 {
         sys = metropolis_pass(sys, rand::rng());
         res.push(sys.clone());
     }
@@ -117,5 +130,11 @@ fn main() {
             .iter()
             .map(|x| f64::from(*x))
             .sum::<f64>()
+    );
+
+    println!(
+        "H_i {} H_f {}",
+        hamiltoniana_ising(&res[0]),
+        hamiltoniana_ising(&res[res.len() - 1])
     )
 }

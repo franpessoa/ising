@@ -1,7 +1,7 @@
 use rand::Rng;
 
 pub trait Metropolis {
-    fn p(&self) -> f64;
+    fn delta_e(&self, o: &Self) -> f64;
     fn prop(&self) -> Self;
 }
 
@@ -10,11 +10,14 @@ pub fn metropolis_pass<T: Metropolis>(s_zero: T, mut rng: impl Rng) -> T {
     let s_prop = s_zero.prop();
 
     // Calcula as probabilidades do atual e do novo
-    let p_self = s_zero.p();
-    let p_prop = s_prop.p();
-
+    let delta_e = s_zero.delta_e(&s_prop);
     // Calcula a taxa de aceitação
-    let alpha = f64::min(1.0, p_prop / p_self);
+    let alpha = if delta_e < 0.0 {
+        1.0
+    } else {
+        f64::exp(-delta_e)
+    };
+
     let p_sort = rng.next_u32() as f64 / u32::MAX as f64;
 
     if p_sort <= alpha {
