@@ -9,7 +9,7 @@ use utils::{grid_pbc::PBCGrid, metropolis::*, spin::Spin};
 struct Config {
     pub h: f64,
     pub j: f64,
-    pub beta: f64, // (k_B \cdot T)^{-1}
+    pub t: f64, // (k_B \cdot T)^{-1}
 }
 
 #[derive(Clone, Debug)]
@@ -36,7 +36,7 @@ fn hamiltoniana_ising(s: &Ising) -> f64 {
 }
 
 impl Metropolis for Ising {
-    fn delta_e(&self, o: &Self) -> f64 {
+    fn p_acc(&self, o: &Self) -> f64 {
         // Find the flipped spin
         let idx = self
             .lambda
@@ -55,7 +55,9 @@ impl Metropolis for Ising {
             .map(|&&n| f64::from(n))
             .sum();
 
-        2.0 * spin_0 * (self.config.j * viz + self.config.h) * self.config.beta
+        let delta_e = 2.0 * spin_0 * (self.config.j * viz + self.config.h);
+        let beta = 1.0 / self.config.t;
+        f64::exp(-beta * delta_e)
     }
     fn prop(&self) -> Self {
         let mut rng = rand::rng();
@@ -83,13 +85,16 @@ fn main() {
         config: Config {
             h: 0.0,
             j: 1.0,
-            beta: 0.5,
+            t: 6.0,
         },
     };
 
     let mut res = vec![sys.clone()];
 
-    for _ in 0..500000 {
+    for en in 0..500000 {
+        if en % 500 == 0 && sys.config.t > 0.1 {
+            sys.config.t -= 0.005
+        }
         sys = metropolis_pass(sys, rand::rng());
         res.push(sys.clone());
     }
